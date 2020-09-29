@@ -3,6 +3,8 @@ require('dotenv').config();
 
 const dbConnection = async () => {
     try{
+        //mongodb://localhost:27017/famarg
+        //mongodb+srv://famarg:famarg1628*@cluster0.dkkhm.mongodb.net/test
         await mongoose.connect(process.env.DB_CNN, 
         {
             useNewUrlParser: true, 

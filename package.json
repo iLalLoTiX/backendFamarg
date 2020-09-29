@@ -4,7 +4,8 @@
   "description": "base de datos de famarg",
   "main": "index.js",
   "scripts": {
-    "start:dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js"
   },
   "author": "Yayo Venegas",
   "license": "ISC",
@@ -18,5 +19,8 @@
     "moment": "^2.27.0",
     "mongoose": "^5.9.28",
     "xlsx": "^0.16.6"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
   }
 }
