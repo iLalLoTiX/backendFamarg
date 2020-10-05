@@ -27,7 +27,6 @@ router.post( '/buscarProductoEstricto', buscarProductoEstricto);
 router.post( '/',
 [
     check('nombre', 'El nombre es obligatorio').not().isEmpty(),
-    check('categoria', 'La categoria es obligatorio').not().isEmpty(),
     check('sku', 'La sku es obligatorio').not().isEmpty(),
     validarCampos,
 ],

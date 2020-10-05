@@ -32,7 +32,7 @@ const getProducto = async (req, res = response) =>{
     }
 
     return res.status(200).json({
-        ok: false,
+        ok: true,
         producto: producto
     });
 };

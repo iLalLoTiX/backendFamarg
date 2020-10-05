@@ -11,10 +11,6 @@ const ProductoSchema = Schema({
         required: true,
         unique: true
     },
-    categoria:     {
-        type: String,
-        required: true,
-    },
     img:        {
         type: String
     }

@@ -30,7 +30,6 @@ router.post( '/buscarContactoEstricto', buscarContactoEstricto);
 router.post( '/',
 [
     check('nombre', 'El nombre es obligatorio').not().isEmpty(),
-    check('telefono', 'El telefono es obligatorio').not().isEmpty(),
     validarCampos,
 ],
 crearContacto);
