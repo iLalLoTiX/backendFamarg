@@ -43,8 +43,7 @@ const filtrarFechas = async (req, res) =>{
 const getEntradasCajas = async (req, res) =>{
 
     const entradasCajas = await EntradasCajas.find({}).
-    populate('chofer', 'nombre puesto').populate('copiloto', 'nombre').
-    populate('cajas.caja', 'nombre precio').limit(20);
+    populate('chofer', 'nombre puesto').populate('copiloto', 'nombre');
 
     return  res.json({
         entradasCajas

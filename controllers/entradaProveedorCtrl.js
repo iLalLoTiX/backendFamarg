@@ -97,13 +97,15 @@ const filtrarEntradasProveedor = async (req, res) =>{
 const getEntradasProveedor = async (req, res) =>{
 
     const desde = Number(req.query.desde) || 0 ; 
-    const limite = Number(req.query.limite) || 5 ; 
-
-    const entradasProveedor = await EntradasProveedor.find({}, 'kg fechaEntrada proveedor producto revisado')
+    const limite = Number(req.query.limite) || 5 ;
+    
+    var m = moment().format('YYYY-M-DD 00:00:00');
+    var m2 = moment().format('YYYY-M-DD 23:59:59');
+    
+    const entradasProveedor = await EntradasProveedor.find({fechaEntrada: {$gte: m, $lte: m2}}, 'kg fechaEntrada proveedor producto revisado')
     .populate('proveedor', 'nombre')
     .populate('producto', 'nombre')
-    .skip(desde)
-    .limit(limite).sort({fechaEntrada:-1});
+    .sort({fechaEntrada:-1});
 
     return  res.json({
         entradasProveedor
