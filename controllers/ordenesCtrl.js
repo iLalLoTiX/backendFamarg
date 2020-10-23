@@ -50,12 +50,12 @@ const getOrdenes = async (req, res = response) => {
     var fechaFin = new Date(Math.max.apply(null,arrayFechas));
     
     // local
-    var desde = moment(fechaInicio).add(1, 'days');
-    var hasta = moment(fechaFin).add(1, 'days');
+    // var desde = moment(fechaInicio).add(1, 'days');
+    // var hasta = moment(fechaFin).add(1, 'days');
 
     // heroku
-    // var desde = moment(fechaInicio);
-    // var hasta = moment(fechaFin);
+    var desde = moment(fechaInicio);
+    var hasta = moment(fechaFin);
 
     var diasEntreFechas = function(desde, hasta) {
         var dia_actual = desde;
