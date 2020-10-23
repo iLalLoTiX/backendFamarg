@@ -7,12 +7,16 @@ const Contacto = require('../models/contactoMdl');
 const Orden    = require('../models/ordenMdl');
 
 const getOrdenes = async (req, res = response) => {
+    
+    var m = moment().format('YYYY-M-DD');
 
+    const limpiar = await Orden.remove({fechaDeEntrada: {$lt: m}});
+    console.log(limpiar);
     const orden = await Orden.find({})
     .populate('proveedor', 'nombre')
     .populate('productos.producto', 'nombre');
     
-    const cantidad = await Orden.find({}, 'fechaDeEntrada Estado')
+    const cantidad = await Orden.find({})
     .populate('proveedor', 'nombre')
     .populate('productos.producto', 'nombre').countDocuments();
 
@@ -45,8 +49,13 @@ const getOrdenes = async (req, res = response) => {
     var fechaInicio = new Date(Math.min.apply(null,arrayFechas));
     var fechaFin = new Date(Math.max.apply(null,arrayFechas));
     
-    var desde = moment(fechaInicio);
-    var hasta = moment(fechaFin);
+    // local
+    var desde = moment(fechaInicio).add(1, 'days');
+    var hasta = moment(fechaFin).add(1, 'days');
+
+    // heroku
+    // var desde = moment(fechaInicio);
+    // var hasta = moment(fechaFin);
 
     var diasEntreFechas = function(desde, hasta) {
         var dia_actual = desde;
