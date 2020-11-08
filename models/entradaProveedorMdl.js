@@ -2,15 +2,26 @@ const {Schema, model} = require ('mongoose');
 
 const EntradaProveedorSchema = Schema({
     
-    proveedor       :{type: Schema.Types.ObjectId, ref: 'Contacto'},
-    producto        :{type: Schema.Types.ObjectId, ref: 'Producto'},
-    kg              :{type: Number, required: true},
-    fechaEntrada    :{type: Date, required: true},
-    revisado        :{type: Boolean, default: false ,required: true},
-    bueno           :{type: Number},
-    malo            :{type: Number},
-    feo             :{type: Number},
-    fechaRevicion   :{type: Date},
+    ordenCompra     :{type: String},
+    proveedor       :{type: Schema.Types.ObjectId, required: true, ref: 'Contacto'},
+    productos       :
+                    [
+                        {
+                            producto    :{type: Schema.Types.ObjectId, required: true, ref: 'Producto'},
+                            cantidad    :{type: Number},
+                            precio      :{type: Number},
+                            noIdoneo    :
+                                        [
+                                            {
+                                                destino     :{type: Schema.Types.ObjectId, ref: 'NoIdoneo'},
+                                                cantidad    :{type: Number} 
+                                            }
+                                        ]                  
+                        }
+                    ],
+    fechaDeEntrada  :{type: Date},
+    total           :{type: Number},
+    estado          :{type: Boolean, required: true, default: false},
 });
 
 EntradaProveedorSchema.method('toJSON', function(){

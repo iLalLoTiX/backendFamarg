@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 
 const EntradasProveedor = require('../models/entradaProveedorMdl');
 const Contacto = require('../models/contactoMdl');
+const Productos = require('../models/productoMdl');
 
 /*
     CRUD: GET, POST, PUT, DELETE
@@ -60,6 +61,7 @@ const filtrarEntradasProveedor = async (req, res) =>{
     }
 
     try {
+        
         const entradasProveedor = await EntradasProveedor.find(variable, 
         'kg fechaEntrada revisado bueno malo')
         .populate('proveedor', 'nombre')
@@ -102,19 +104,37 @@ const getEntradasProveedor = async (req, res) =>{
     var m = moment().format('YYYY-M-DD 00:00:00');
     var m2 = moment().format('YYYY-M-DD 23:59:59');
     
-    const entradasProveedor = await EntradasProveedor.find({fechaEntrada: {$gte: m, $lte: m2}}, 'kg fechaEntrada proveedor producto revisado')
+    const entradasProveedor = await EntradasProveedor.find()
+    .populate('productos.noIdoneo.destino', 'destino');
+
+    for(let i = 0; i < entradasProveedor.length; i++){
+    let estado = true;
+        for(let o = 0; o < entradasProveedor[i].productos.length; o++)
+        {
+            if(entradasProveedor[i].productos[o].noIdoneo.length == 0)
+            {
+                estado = false;
+            }
+        }
+        const actualizarEstado = await EntradasProveedor.findByIdAndUpdate(entradasProveedor[i]._id, {estado: estado}, {new: true});
+        entradasProveedor[i] = actualizarEstado;
+    }
+    
+    const entrada = await EntradasProveedor.find()
+    
     .populate('proveedor', 'nombre')
-    .populate('producto', 'nombre')
-    .sort({fechaEntrada:-1});
+    .populate('productos.producto', 'nombre')
+    .populate('productos.noIdoneo.destino', 'destino')
+    .sort({fechaDeEntrada: -1});
 
     return  res.json({
-        entradasProveedor
+        entrada
     });
 };
 
 const getEntradasProveedorFalse = async (req, res) =>{
 
-    const entradasProveedor = await EntradasProveedor.find({revisado: false}, 'kg fechaEntrada proveedor producto revisado').limit(20);
+    const entradasProveedor = await EntradasProveedor.find({fechaEntrada: {$gte: m, $lte: m2}}, 'kg fechaEntrada proveedor producto revisado').limit(20);
 
     return  res.json({
         entradasProveedor
@@ -128,13 +148,39 @@ const getEntradasProveedorTrue = async (req, res) =>{
     return  res.json({
         entradasProveedor
     });
+    
 };
 
 const crearEntradaProveedor = async (req, res = response) =>{
 
     try {
+
+        const {proveedor} = req.body;
+
+        const proveedorExiste = await Contacto.findById(proveedor);
+
+        if(!proveedorExiste){
+            return  res.status(200).json({
+                ok: false,
+                msg: 'el proveedor no existe'
+            });
+        }
+
+        for(let i = 0; i <req.body.productos.length; i++)
+        {
+            const productoDB = await Productos.findById(req.body.productos[i].producto);
+
+            if(!productoDB){
+                return res.status(404).json({
+                    ok: false,
+                    msg: 'El producto en la pocicion ' + i + 'no existe' ,
+                });
+            }
+        }
+
+        req.body.fechaDeEntrada = new Date(req.body.fechaDeEntrada.replace(/-/g, '\/'));
+
         const entradaProveedor = new EntradasProveedor(req.body);
-        entradaProveedor.fechaEntrada = new Date();
         await entradaProveedor.save();
 
         return  res.json({
@@ -147,7 +193,6 @@ const crearEntradaProveedor = async (req, res = response) =>{
         res.status(400).json({
             ok: false,
             msg: 'error inesperado',
-            body: req.body
         });
     }
 };
@@ -166,7 +211,7 @@ const actualizarEntradaProveedor = async (req, res = response) =>{
         }
 
         const actualizar = req.body;
-        actualizar.fechaEntrada = entradasProveedorDB.fechaEntrada;
+        actualizar.fechaEntrada = new Date(entradasProveedorDB.fechaEntrada.replace(/-/g, '\/'));
         const actualizarEntradaProveedor = await EntradasProveedor.findByIdAndUpdate(uid, actualizar, {new: true});
         
         return res.json({
@@ -218,42 +263,6 @@ const revisarEntradaProveedor = async (req, res = response) =>{
     }
 };
 
-const desrevisarEntradaProveedor = async (req, res = response) =>{
-
-    const uid = req.params.id;
-
-    try {
-        const entradasProveedorDB = await EntradasProveedor.findById(uid);
-        if(!entradasProveedorDB){
-            return res.status(400).json({
-                ok: false,
-                msg: 'La entrada de proveedor no existe',
-            });
-        }
-
-        var revisar = new Object();
-        revisar.bueno = 0; 
-        revisar.malo = 0;
-        revisar.fechaRevicion = new Date();
-        revisar.revisado = false;
-        console.log(revisar);
-
-        const desrevisarEntradaProveedor = await EntradasProveedor.findByIdAndUpdate(uid, revisar, {new: true});
-        
-        return res.json({
-            ok: true,
-            revisado: desrevisarEntradaProveedor
-        });
-        
-    } catch (error) {
-        return res.status(404).json({
-            ok: false,
-            msg: 'Error al actualizar',
-            req
-        });
-    }
-};
-
 const borrarEntradaProveedor = async (req, res = response) =>{
 
     const uid = req.params.id
@@ -288,8 +297,12 @@ const borrarEntradaProveedor = async (req, res = response) =>{
     }
 };
 
+const mermar = async (req, res = response) => {
+    console.log(req.body);
+}
+
 module.exports = {
-    desrevisarEntradaProveedor,
+    mermar,
     filtrarEntradasProveedor,
     crearEntradaProveedor,
     revisarEntradaProveedor,

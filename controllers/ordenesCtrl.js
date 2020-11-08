@@ -1,20 +1,20 @@
 const { response } = require('express');
 var moment = require('moment');
 const bcrypt = require('bcryptjs');
+const {contar} = require('../helpers/contarOrden');
 
 const Producto = require('../models/productoMdl');
-const Contacto = require('../models/contactoMdl');
 const Orden    = require('../models/ordenMdl');
 
 const getOrdenes = async (req, res = response) => {
     
     var m = moment().format('YYYY-M-DD');
 
-    const limpiar = await Orden.remove({fechaDeEntrada: {$lt: m}});
-    console.log(limpiar);
+    await Orden.deleteMany({fechaDeEntrada: {$lt: m}});
+    
     const orden = await Orden.find({})
     .populate('proveedor', 'nombre')
-    .populate('productos.producto', 'nombre');
+    .populate('productos.producto', 'nombre').sort({fechaDeEntrada: 1});
     
     const cantidad = await Orden.find({})
     .populate('proveedor', 'nombre')
@@ -46,14 +46,9 @@ const getOrdenes = async (req, res = response) => {
 
     let arrayFechas = orden.map((i) => new Date(i.fechaDeEntrada));
 
-    var fechaInicio = new Date(Math.min.apply(null,arrayFechas));
     var fechaFin = new Date(Math.max.apply(null,arrayFechas));
     
     // local
-    // var desde = moment(m);
-    // var hasta = moment(fechaFin).add(1, 'days');
-
-    // heroku
     var desde = moment(m);
     var hasta = moment(fechaFin);
 
@@ -65,7 +60,6 @@ const getOrdenes = async (req, res = response) => {
             fechas.push(dia_actual.format('YYYY-MM-DD'));
             dia_actual.add(1, 'days');
         }
-
         return fechas;
     };
 
@@ -84,20 +78,23 @@ const crearOrdenes = async (req, res = response) => {
     for(let i = 0; i <req.body.productos.length; i++)
     {
         
+        req.body.ordenCompra = await contar();
+        
         const productoDB = await Producto.findById(req.body.productos[i].producto);
 
         if(!productoDB){
             return res.status(404).json({
                 ok: false,
-                msg: 'El producto no existe',
+                msg: 'El producto en la pocicion ' + i + 'no existe' ,
             });
         }
     }
     
+    req.body.fechaDeEntrada = new Date(req.body.fechaDeEntrada.replace(/-/g, '\/'));
+
     const orden = new Orden(req.body);
 
     await orden.save();
-
     return  res.json({
         ok: true,
         orden
@@ -116,6 +113,8 @@ const editar = async (req, res = response) => {
             msg: 'la orden no existe'
         });
     }
+
+    req.body.fechaDeEntrada = new Date(req.body.fechaDeEntrada.replace(/-/g, '\/'));
 
     const actualizarOrden = await Orden.findByIdAndUpdate(uid, req.body, {new: true});
 
@@ -138,7 +137,7 @@ const eliminar = async (req, res = response) => {
         });
     }
 
-    const registrarOrden = await Orden.findByIdAndRemove(uid);
+    await Orden.findByIdAndRemove(uid);
 
     return res.status(200).json({
         ok: true,
@@ -172,11 +171,11 @@ const getOrden = async (req, res = response) => {
 
     const uid = req.params.id;
 
-    const ordenExiste = await Orden.findById(uid, {})
+    const orden = await Orden.findById(uid, {})
     .populate('proveedor', 'nombre')
     .populate('productos.producto', 'nombre');
 
-    if(!ordenExiste){
+    if(!orden){
         return res.status(400).json({
             ok: false,
             msg: 'la orden no existe'
@@ -185,7 +184,7 @@ const getOrden = async (req, res = response) => {
 
     return res.status(200).json({
         ok: true,
-        msg: ordenExiste
+        orden
     });
 }
 

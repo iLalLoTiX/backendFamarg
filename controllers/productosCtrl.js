@@ -156,7 +156,7 @@ const actualizarProducto = async (req, res = response) =>{
 
         campos.nombre = nombre;
         campos.sku = sku;
-        console.log(campos);
+        
         const actualizarProducto = await Productos.findByIdAndUpdate(uid, campos, {new: true});
         
         return res.json({

@@ -18,7 +18,7 @@ const {
     getEntradasProveedor, 
     getEntrada,
     revisarEntradaProveedor,
-    desrevisarEntradaProveedor} = require ('../controllers/entradaProveedorCtrl');
+    mermar} = require ('../controllers/entradaProveedorCtrl');
 
 router.get( '/', getEntradasProveedor);
 
@@ -33,12 +33,10 @@ router.get( '/entradasProveedorFalse', getEntradasProveedorFalse);
 router.post( '/',
 [
     check('proveedor', 'El proveedor es obligatorio').not().isEmpty(),
-    check('producto', 'El producto es obligatorio').not().isEmpty(),
-    check('kg', 'Los kg son obligatorios').not().isEmpty(),
     validarCampos,
 ], crearEntradaProveedor);
 
-router.put( '/:id',
+router.put( '/editar/:id',
 [
     check('proveedor', 'El proveedor es obligatorio').not().isEmpty(),
     check('producto', 'El producto es obligatorio').not().isEmpty(),
@@ -46,8 +44,8 @@ router.put( '/:id',
     validarCampos,
 ], actualizarEntradaProveedor);
 
-router.put( '/desmarcarEntradaProveedor/:id',
-[], desrevisarEntradaProveedor);
+router.put( '/mermar/:id',
+[], mermar);
 
 router.put( '/revisar/:id',
 [

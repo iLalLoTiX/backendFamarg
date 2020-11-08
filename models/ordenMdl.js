@@ -2,6 +2,7 @@ const {Schema, model} = require ('mongoose');
 
 const OrdenesSchema = Schema({
     
+    ordenCompra     :{type: String, required: true},
     proveedor       :{type: Schema.Types.ObjectId, required: true, ref: 'Contacto'},
     productos       :
                     [

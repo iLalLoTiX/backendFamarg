@@ -29,6 +29,7 @@ app.use('/api/contactos'        ,   require('./routes/contactosRts'));
 app.use('/api/productos'        ,   require('./routes/productosRts'));
 app.use('/api/entradaProveedor' ,   require('./routes/entradaProveedorRts'));
 app.use('/api/ordenes'          ,   require('./routes/ordenesRts'));
+app.use('/api/noIdoneo'         ,   require('./routes/noIdoneoRts'));
 
 app.listen(process.env.PORT, () => {
     console.log('Servidor corriendo en el puerto: ' + process.env.PORT);
