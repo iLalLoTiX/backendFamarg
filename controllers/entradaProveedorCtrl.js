@@ -4,8 +4,10 @@ var moment = require('moment');
 const bcrypt = require('bcryptjs');
 
 const EntradasProveedor = require('../models/entradaProveedorMdl');
-const Contacto = require('../models/contactoMdl');
+const Contacto  = require('../models/contactoMdl');
 const Productos = require('../models/productoMdl');
+const Orden     = require('../models/ordenMdl');
+const NoIdoneo = require('../models/noIdoneoMdl');
 
 /*
     CRUD: GET, POST, PUT, DELETE
@@ -15,7 +17,9 @@ const getEntrada = async (req, res) => {
     
     const idEntrada = req.params.id;
 
-    const EntradaExiste = await EntradasProveedor.findById(idEntrada);
+    const EntradaExiste = await EntradasProveedor.findById(idEntrada, '')
+    .populate('proveedor', 'nombre')
+    .populate('productos.producto', 'nombre');
 
     if(!EntradaExiste){
         return res.status(400).json({
@@ -32,13 +36,12 @@ const getEntrada = async (req, res) => {
 }
 
 const filtrarEntradasProveedor = async (req, res) =>{
-    //body
 
     const fechaUno = req.query.fechaUno;
     const fechaDos = req.query.fechaDos;
 
     const desde = Number(req.query.desde) || 0 ; 
-    const limite = Number(req.query.limite) || 5 ;
+    const limite = Number(req.query.limite) || 25 ;
     var m = moment(fechaDos, 'YYYY-M-DD, HH:mm:ss ZZ');
     m.set({h: 23, m: 59});
 
@@ -48,44 +51,28 @@ const filtrarEntradasProveedor = async (req, res) =>{
          variable.proveedor = req.query.proveedor
     }
     if(req.query.producto !== ''){
-        variable.producto= req.query.producto
+        variable['productos.producto'] =  req.query.producto;
     }
     if(req.query.fechaUno !== ''){
-        variable.fechaEntrada=  {$gte: new Date(fechaUno)} 
+        variable.fechaDeEntrada=  {$gte: new Date(fechaUno)} 
     }
     if(req.query.fechaDos !== ''){
-        variable.fechaEntrada=  {$lte: m} 
+        variable.fechaDeEntrada=  {$lte: m} 
     }
     if(req.query.fechaDos !== '' && req.query.fechaUno !== ''){
-        variable.fechaEntrada=  {$gte: new Date(fechaUno), $lte: m} 
+        variable.fechaDeEntrada=  {$gte: new Date(fechaUno), $lte: m} 
     }
 
     try {
-        
-        const entradasProveedor = await EntradasProveedor.find(variable, 
-        'kg fechaEntrada revisado bueno malo')
+        const entradasProveedor = await EntradasProveedor.find(variable)
         .populate('proveedor', 'nombre')
-        .populate('producto', 'nombre')
+        .populate('productos.producto', 'nombre')
+        .populate('productos.noIdoneo.destino', 'destino')
         .skip(desde)
         .limit(limite).sort({fechaEntrada:-1});
 
-        const mermas = await EntradasProveedor.find(variable, 
-        'kg revisado malo')
-        .sort({fechaEntrada:-1});
-
-        var malo = 0;
-        var kgTotal = 0;
-        mermas.forEach( a => {
-            if(a.revisado == true){
-                malo = a.malo + malo;
-                kgTotal = a.kg + kgTotal;
-            }
-        });
-
-        return  res.json({
-            entradasProveedor: entradasProveedor,
-            malo: malo,
-            kgTotal: kgTotal,
+        return  res.status(200).json({
+            entradasProveedor: entradasProveedor
         });
     }
 
@@ -97,35 +84,15 @@ const filtrarEntradasProveedor = async (req, res) =>{
 };
 
 const getEntradasProveedor = async (req, res) =>{
-
-    const desde = Number(req.query.desde) || 0 ; 
-    const limite = Number(req.query.limite) || 5 ;
     
     var m = moment().format('YYYY-M-DD 00:00:00');
     var m2 = moment().format('YYYY-M-DD 23:59:59');
     
-    const entradasProveedor = await EntradasProveedor.find()
-    .populate('productos.noIdoneo.destino', 'destino');
-
-    for(let i = 0; i < entradasProveedor.length; i++){
-    let estado = true;
-        for(let o = 0; o < entradasProveedor[i].productos.length; o++)
-        {
-            if(entradasProveedor[i].productos[o].noIdoneo.length == 0)
-            {
-                estado = false;
-            }
-        }
-        const actualizarEstado = await EntradasProveedor.findByIdAndUpdate(entradasProveedor[i]._id, {estado: estado}, {new: true});
-        entradasProveedor[i] = actualizarEstado;
-    }
-    
-    const entrada = await EntradasProveedor.find()
-    
+    const entrada = await EntradasProveedor.find({fechaDeEntrada: {$gte: new Date(m), $lte: m2} })    
     .populate('proveedor', 'nombre')
     .populate('productos.producto', 'nombre')
     .populate('productos.noIdoneo.destino', 'destino')
-    .sort({fechaDeEntrada: -1});
+    .sort({fechaEntrada:-1});
 
     return  res.json({
         entrada
@@ -156,7 +123,7 @@ const crearEntradaProveedor = async (req, res = response) =>{
     try {
 
         const {proveedor} = req.body;
-
+        
         const proveedorExiste = await Contacto.findById(proveedor);
 
         if(!proveedorExiste){
@@ -200,7 +167,6 @@ const crearEntradaProveedor = async (req, res = response) =>{
 const actualizarEntradaProveedor = async (req, res = response) =>{
 
     const uid = req.params.id;
-
     try {
         const entradasProveedorDB = await EntradasProveedor.findById(uid);
         if(!entradasProveedorDB){
@@ -211,19 +177,21 @@ const actualizarEntradaProveedor = async (req, res = response) =>{
         }
 
         const actualizar = req.body;
-        actualizar.fechaEntrada = new Date(entradasProveedorDB.fechaEntrada.replace(/-/g, '\/'));
+        actualizar.fechaDeEntrada = new Date(actualizar.fechaDeEntrada.replace(/-/g, '\/'));
+        actualizar.estado = false;
         const actualizarEntradaProveedor = await EntradasProveedor.findByIdAndUpdate(uid, actualizar, {new: true});
-        
+
         return res.json({
             ok: true,
             actualizar: actualizarEntradaProveedor
         });
         
-    } catch (error) {
+    } catch (err) {
+        console.log(err);
         return res.status(404).json({
             ok: false,
             msg: 'Error al actualizar',
-            req
+            error: err
         });
     }
 };
@@ -275,7 +243,7 @@ const borrarEntradaProveedor = async (req, res = response) =>{
         if(!entradasProveedorDB){
             return res.status(400).json({
                 ok: false,
-                msg: 'La entrada de cajas no existe',
+                msg: 'La entrada de proveedor no existe',
             });
         }
 
@@ -288,8 +256,6 @@ const borrarEntradaProveedor = async (req, res = response) =>{
 
     } catch (error) 
     {
-
-        console.log(error);
         res.status(500).json({
             ok: false,
             msg: 'error inesperado'
@@ -298,10 +264,90 @@ const borrarEntradaProveedor = async (req, res = response) =>{
 };
 
 const mermar = async (req, res = response) => {
-    console.log(req.body);
+
+    const uid = req.params.id;
+    
+    try{
+        const entradasProveedorDB = await EntradasProveedor.findById(uid);
+
+        if(!entradasProveedorDB){
+            return res.status(400).json({
+                ok: false,
+                msg: 'La entrada de proveedor no existe',
+            });
+        }
+
+        entradasProveedorDB.productos[req.body.index].noIdoneo = new Array();
+        
+        if(req.body.mermas.length > 0){
+            for(let i = 0; i<req.body.mermas.length; i++){
+                const destino = await NoIdoneo.findOne({destino: req.body.mermas[i].destino}, 'destino');
+                entradasProveedorDB.productos[req.body.index].noIdoneo.push({destino: destino._id, cantidad: req.body.mermas[i].cantidad});
+            }
+        }else{
+            entradasProveedorDB.productos[req.body.index].noIdoneo = new Array();
+        }
+
+        let estado = true;
+        for(let i = 0; i < entradasProveedorDB.productos.length; i++)
+        {
+            if(entradasProveedorDB.productos[i].noIdoneo.length == 0)
+            {
+                estado = false;
+            }
+        }
+
+        entradasProveedorDB.estado = estado;
+
+        const mermas = await EntradasProveedor.findByIdAndUpdate(uid, entradasProveedorDB, {new: true});
+
+        return res.status(200).json({
+            ok: true,
+            mermas
+        });
+        
+
+    }catch(error){
+        res.status(500).json({
+            ok: false,
+            msg: 'error inesperado',
+            error
+        });
+    }
+}
+
+const borrarDesmarcar = async (req, res =response) => {
+    
+    const uid = req.params.id;
+    
+    try{
+        const entradasProveedorDB = await EntradasProveedor.findById(uid);
+
+        if(!entradasProveedorDB){
+            return res.status(400).json({
+                ok: false,
+                msg: 'La entrada de proveedor no existe',
+            });
+        }
+
+        const borrarEntrada = await EntradasProveedor.findByIdAndRemove(uid);
+    
+        if(borrarEntrada.ordenCompra)
+        {
+            await Orden.findOneAndUpdate({ordenCompra : borrarEntrada.ordenCompra}, {estado: 'pendiente'});
+        }
+
+    }catch(error){
+        res.status(500).json({
+            ok: false,
+            msg: 'error inesperado',
+            error
+        });
+    }
 }
 
 module.exports = {
+    borrarDesmarcar,
     mermar,
     filtrarEntradasProveedor,
     crearEntradaProveedor,

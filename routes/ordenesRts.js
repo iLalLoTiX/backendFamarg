@@ -8,7 +8,7 @@ const { validarCampos } = require('../middlewares/validar-campos');
 
 const router = Router();
 
-const { crearOrdenes, getOrdenes, editar, registrar, eliminar, getOrden } = require ('../controllers/ordenesCtrl');
+const { crearOrdenes, getOrdenes, editar, registrar, eliminar, getOrden, desmarcar} = require ('../controllers/ordenesCtrl');
 
 router.post( '/',
 [
@@ -25,6 +25,9 @@ router.put('/editar/:id',
 
 router.put('/registrar/:id',
 [], registrar);
+
+router.put('/desmarcar/:id',
+[], desmarcar);
 
 router.delete('/:id',
 [], eliminar);

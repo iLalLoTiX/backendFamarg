@@ -13,6 +13,7 @@ const {
     actualizarEntradaProveedor, 
     filtrarEntradasProveedor, 
     borrarEntradaProveedor, 
+    borrarDesmarcar,
     getEntradasProveedorTrue, 
     getEntradasProveedorFalse, 
     getEntradasProveedor, 
@@ -39,8 +40,6 @@ router.post( '/',
 router.put( '/editar/:id',
 [
     check('proveedor', 'El proveedor es obligatorio').not().isEmpty(),
-    check('producto', 'El producto es obligatorio').not().isEmpty(),
-    check('kg', 'Los Kilos son obligatorios').not().isEmpty(),
     validarCampos,
 ], actualizarEntradaProveedor);
 
@@ -49,10 +48,14 @@ router.put( '/mermar/:id',
 
 router.put( '/revisar/:id',
 [
-    check('malo', 'Introduce la cantidad perdida de producto').not().isEmpty(),
     validarCampos,
 ], revisarEntradaProveedor);
 
-router.delete('/:id', borrarEntradaProveedor);
+router.delete( '/borrarDesmarcarEntrada/:id',
+[
+    validarCampos,
+], borrarDesmarcar);
+
+router.delete( '/borrarEntrada/:id' , borrarEntradaProveedor);
 
 module.exports = router;

@@ -5,6 +5,7 @@ const {contar} = require('../helpers/contarOrden');
 
 const Producto = require('../models/productoMdl');
 const Orden    = require('../models/ordenMdl');
+const EntradasProveedor = require('../models/entradaProveedorMdl');
 
 const getOrdenes = async (req, res = response) => {
     
@@ -31,6 +32,7 @@ const getOrdenes = async (req, res = response) => {
     }
 
     productos.push({id:orden[0].productos[0].producto._id, nombre: orden[0].productos[0].producto.nombre});
+    
     for(let x = 0; x <cantidad; x++)
     {
         for(let y = 0; y < orden[x].productos.length; y++)
@@ -188,7 +190,34 @@ const getOrden = async (req, res = response) => {
     });
 }
 
+const desmarcar = async (req, res = response) => {
+
+    const uid = req.params.id;
+
+    const ordenExiste = await Orden.findById(uid);
+
+    if(!ordenExiste){
+        return res.status(400).json({
+            ok: false,
+            msg: 'la orden no existe'
+        });
+    }
+
+    const registrarOrden = await Orden.findByIdAndUpdate(uid, {estado: 'pendiente'}, {new: true});
+    
+    if(registrarOrden.ordenCompra){
+        await EntradasProveedor.findOneAndDelete({ordenCompra: registrarOrden.ordenCompra});
+    }
+
+
+    return res.status(200).json({
+        ok: true,
+        msg: registrarOrden
+    });
+}
+
 module.exports = {
+    desmarcar,
     getOrden,
     crearOrdenes,
     getOrdenes,

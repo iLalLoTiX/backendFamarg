@@ -8,19 +8,27 @@ const EntradaProveedorSchema = Schema({
                     [
                         {
                             producto    :{type: Schema.Types.ObjectId, required: true, ref: 'Producto'},
-                            cantidad    :{type: Number},
-                            precio      :{type: Number},
+                            cantidad    :{type: Number, required: true},
+                            cajas    :
+                                        [
+                                            {
+                                                caja            :{type: Schema.Types.ObjectId, ref: 'Caja'},
+                                                cantidadCajas   :{type: Number} 
+                                            }
+                                        ],
+                            precio      :{type: Number, default: 0},
                             noIdoneo    :
                                         [
                                             {
                                                 destino     :{type: Schema.Types.ObjectId, ref: 'NoIdoneo'},
                                                 cantidad    :{type: Number} 
                                             }
-                                        ]                  
+                                        ],
+                            totalMerma  :{type: Number, required: true, default: 0}                  
                         }
                     ],
-    fechaDeEntrada  :{type: Date},
-    total           :{type: Number},
+    fechaDeEntrada  :{type: Date, required: true},
+    totalCosto      :{type: Number, required: true, default: 0},
     estado          :{type: Boolean, required: true, default: false},
 });
 
