@@ -11,7 +11,8 @@ const router = Router();
 const { 
     crearEntradaProveedor,
     actualizarEntradaProveedor, 
-    filtrarEntradasProveedor, 
+    filtrarEntradasProveedor,
+    estadisticasEntradasProveedor,
     borrarEntradaProveedor, 
     borrarDesmarcar,
     getEntradasProveedorTrue, 
@@ -26,6 +27,8 @@ router.get( '/', getEntradasProveedor);
 router.get( '/buscarEntrada/:id', getEntrada);
 
 router.get( '/filtrarFechas', filtrarEntradasProveedor);
+
+router.get( '/estadisticasEntradasProveedor', estadisticasEntradasProveedor);
 
 router.get( '/entradasProveedorTrue', getEntradasProveedorTrue);
 
