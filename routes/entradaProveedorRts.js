@@ -30,10 +30,6 @@ router.get( '/filtrarFechas', filtrarEntradasProveedor);
 
 router.get( '/estadisticasEntradasProveedor', estadisticasEntradasProveedor);
 
-router.get( '/entradasProveedorTrue', getEntradasProveedorTrue);
-
-router.get( '/entradasProveedorFalse', getEntradasProveedorFalse);
-
 router.post( '/',
 [
     check('proveedor', 'El proveedor es obligatorio').not().isEmpty(),

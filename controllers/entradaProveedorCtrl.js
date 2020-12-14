@@ -49,12 +49,14 @@ const estadisticasEntradasProveedor = async (req, res) => {
     
     if (req.query.proveedor !== '') {
         variable[0].$match.proveedor = mongoose.Types.ObjectId(req.query.proveedor);
+        
     }
     if (req.query.producto !== '') {
         
         variable[0].$match['productos.producto'] = mongoose.Types.ObjectId(req.query.producto);
         variable.push(new Object());
         variable[1].$project= new Object();
+        variable[1].$project.fechaDeEntrada = 1; 
         variable[1].$project.productos = new Object();
         variable[1].$project.productos.$filter = new Object(); 
         variable[1].$project.productos.$filter = {
@@ -63,7 +65,6 @@ const estadisticasEntradasProveedor = async (req, res) => {
             cond: { $eq: ['$$items.producto', mongoose.Types.ObjectId(req.query.producto)] }
         }
     }
-
     if (req.query.fechaUno !== '') {
         variable[0].$match.fechaDeEntrada = { $gte: new Date(fechaUno) }
     }
@@ -76,21 +77,24 @@ const estadisticasEntradasProveedor = async (req, res) => {
         variable[0].$match.fechaDeEntrada = { $gte: new Date(fechaUno), $lte: new Date(m) }
     }
 
+    console.log(variable);
+
     try 
     {
         const entradasProveedor = await EntradasProveedor.aggregate([variable]).sort({fechaDeEntrada: -1});
 
         let kg = 0;
         let merma = 0;
-
+        let dinero = 0;
         for(let i = 0; i < entradasProveedor.length; i++)
         {
             for(let o = 0; o < entradasProveedor[i].productos.length; o++)
             {
                 if(entradasProveedor[i].productos[o].totalMerma != undefined)
                 {
-                    kg = kg + entradasProveedor[i].productos[o].cantidad;
-                    merma = merma + entradasProveedor[i].productos[o].totalMerma;
+                    kg      = kg + entradasProveedor[i].productos[o].cantidad;
+                    merma   = merma + entradasProveedor[i].productos[o].totalMerma;
+                    dinero  = dinero + entradasProveedor[i].productos[o].precio;
                 }
             }
         }
@@ -99,6 +103,9 @@ const estadisticasEntradasProveedor = async (req, res) => {
             entradasProveedor: entradasProveedor,
             kg: kg - merma,
             merma: merma,
+            total: kg,
+            dinero: dinero,
+            variable: variable
         });
             
     } catch (error) {
@@ -133,7 +140,14 @@ const filtrarEntradasProveedor = async (req, res) =>
     if (req.query.fechaDos !== '' && req.query.fechaUno !== '') {
         variable.fechaDeEntrada = { $gte: new Date(fechaUno), $lte: new Date(m) }
     }
-    
+    if (req.query.estado !== '') {
+        if(req.query.estado == 'true'){
+            variable.estado = true;
+        }else{
+            variable.estado = false;
+        }
+    }
+     
     try {
         const entradasProveedor = await EntradasProveedor
         .find(variable)
@@ -170,31 +184,12 @@ const getEntradasProveedor = async (req, res) => {
     });
 };
 
-const getEntradasProveedorFalse = async (req, res) => {
-
-    const entradasProveedor = await EntradasProveedor.find({ fechaEntrada: { $gte: m, $lte: m2 } }, 'kg fechaEntrada proveedor producto revisado').limit(20);
-
-    return res.json({
-        entradasProveedor
-    });
-};
-
-const getEntradasProveedorTrue = async (req, res) => {
-
-    const entradasProveedor = await EntradasProveedor.find({ revisado: true }, 'kg fechaEntrada proveedor producto revisado').limit(20);
-
-    return res.json({
-        entradasProveedor
-    });
-
-};
 
 const crearEntradaProveedor = async (req, res = response) => {
 
     try {
 
         const { proveedor } = req.body;
-
         const proveedorExiste = await Contacto.findById(proveedor);
 
         if (!proveedorExiste) {
@@ -247,6 +242,7 @@ const actualizarEntradaProveedor = async (req, res = response) => {
         }
 
         const actualizar = req.body;
+        console.log(req.body);
         actualizar.fechaDeEntrada = new Date(actualizar.fechaDeEntrada.replace(/-/g, '\/'));
         actualizar.estado = false;
         const actualizarEntradaProveedor = await EntradasProveedor.findByIdAndUpdate(uid, actualizar, { new: true });
@@ -430,8 +426,6 @@ module.exports = {
     revisarEntradaProveedor,
     actualizarEntradaProveedor,
     borrarEntradaProveedor,
-    getEntradasProveedorTrue,
-    getEntradasProveedorFalse,
     getEntradasProveedor,
     getEntrada
 }
